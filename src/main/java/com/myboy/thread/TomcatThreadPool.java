@@ -1,6 +1,7 @@
 package com.myboy.thread;
 
 import java.util.Properties;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -14,12 +15,13 @@ public class TomcatThreadPool {
         int core = Integer.parseInt(properties.getProperty("thread.pool.core", "100"));
         int max = Integer.parseInt(properties.getProperty("thread.pool.max", "200"));
         int aliveTime = Integer.parseInt(properties.getProperty("thread.pool.alive-time", "60"));
+        int blockSize = Integer.parseInt(properties.getProperty("thread.pool.block-queue.size", "100"));
         executor = new ThreadPoolExecutor(
                 core,
                 max,
                 aliveTime,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(),
+                new ArrayBlockingQueue<>(blockSize),
                 new TomcatThreadFactory(),
                 new ThreadPoolExecutor.CallerRunsPolicy()
                 );
