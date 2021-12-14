@@ -20,17 +20,15 @@ public class HttpServletResponse {
         this.outputStream = outputStream;
     }
 
-    public void write(String data){
-        StringBuilder builder = new StringBuilder();
-        builder.append(String.format("HTTP/1.1 %s OK\n", code.getCode()))
-                .append(String.format("Content-Type: %s;\n", contentType.getType()))
-                .append("\r\n")
-                .append(data);
-        try {
-            outputStream.write(builder.toString().getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("写入数据失败");
-        }
+    public void write() throws IOException {
+        write(null);
+    }
+
+    public void write(String data) throws IOException {
+        String builder = String.format("HTTP/1.1 %s OK\n", code.getCode()) +
+                String.format("Content-Type: %s;\n", contentType.getType()) +
+                "\r\n" +
+                (data == null ? code.getMsg() : data);
+        outputStream.write(builder.getBytes(StandardCharsets.UTF_8));
     }
 }

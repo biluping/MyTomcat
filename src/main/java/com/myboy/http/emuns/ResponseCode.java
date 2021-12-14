@@ -2,8 +2,9 @@ package com.myboy.http.emuns;
 
 public enum ResponseCode {
     OK(200, "OK"),
-    BAD_REQUEST(400,"Bad Request"),
-    NOT_FOUND(404, "Not Found");
+    Bad_Request(400,"Bad Request"),
+    Not_Found(404, "Not Found"),
+    Internal_Server_Error(500, "Internal Server Error");
 
     private final Integer code;
     private final String msg;
