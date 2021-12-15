@@ -6,6 +6,8 @@ import com.myboy.http.HttpServletResponse;
 import com.myboy.http.emuns.ResponseCode;
 import com.myboy.thread.TomcatThreadPool;
 import com.myboy.utils.ResponseUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +17,8 @@ import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Tomcat {
+
+    Logger logger = LoggerFactory.getLogger(Tomcat.class);
 
     private static final Properties properties;
     private static final ThreadPoolExecutor executor;
@@ -37,9 +41,12 @@ public class Tomcat {
     }
 
     public void start() {
-
-        try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(properties.getProperty("server.port", "80")))) {
+        int port = Integer.parseInt(properties.getProperty("server.port", "80"));
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
             for (; ; ) {
+                if (logger.isInfoEnabled()){
+                    logger.info("Tomcat 启动成功，端口号{}", port);
+                }
                 Socket socket = serverSocket.accept();
                 execute(socket);
             }
