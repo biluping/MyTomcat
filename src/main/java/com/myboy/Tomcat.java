@@ -18,20 +18,27 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class Tomcat {
 
-    Logger logger = LoggerFactory.getLogger(Tomcat.class);
+    private static final Logger logger = LoggerFactory.getLogger(Tomcat.class);
 
-    private static final Properties properties;
+    private static final Properties properties = new Properties();
     private static final ThreadPoolExecutor executor;
 
     static {
         // 初始化配置文件
         InputStream inputStream = Tomcat.class.getClassLoader().getResourceAsStream("tomcat.properties");
-        properties = new Properties();
+        if (inputStream == null){
+            if (logger.isDebugEnabled()){
+                logger.debug("配置文件tomcat.properties不存在，将使用默认配置");
+            }
+        }
+
         try {
-            properties.load(inputStream);
+            if (inputStream != null){
+                properties.load(inputStream);
+            }
         } catch (IOException e) {
             e.printStackTrace();
-            throw new RuntimeException("无法加载到配置文件：tomcat.properties");
+            throw new RuntimeException("加载到配置文件失败：tomcat.properties");
         }
 
         // 初始化线程池
@@ -42,11 +49,11 @@ public class Tomcat {
 
     public void start() {
         int port = Integer.parseInt(properties.getProperty("server.port", "80"));
+        if (logger.isInfoEnabled()) {
+            logger.info("Tomcat 启动成功，端口号{}", port);
+        }
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             for (; ; ) {
-                if (logger.isInfoEnabled()){
-                    logger.info("Tomcat 启动成功，端口号{}", port);
-                }
                 Socket socket = serverSocket.accept();
                 execute(socket);
             }
@@ -59,11 +66,16 @@ public class Tomcat {
 
     private void execute(Socket socket) {
         executor.execute(() -> {
+            long startTime = System.currentTimeMillis();
+            String path = null;
+            String className = null;
+
             try {
                 HttpServletRequest request = new HttpServletRequest(socket.getInputStream());
                 HttpServletResponse response = new HttpServletResponse(socket.getOutputStream());
 
-                String className = properties.getProperty(request.getPath());
+                className = properties.getProperty(request.getPath());
+                path = request.getPath();
 
                 // 未定义的Servlet
                 if (className == null) {
@@ -72,16 +84,26 @@ public class Tomcat {
                     return;
                 }
 
-                System.out.println(Thread.currentThread().getName() + " " + request.getPath());
+                if (logger.isDebugEnabled()){
+                    logger.debug("{} {}", Thread.currentThread().getName(), request.getPath());
+                }
+
                 Class<?> servletClass = Class.forName(className);
                 HttpServlet httpServlet = (HttpServlet) servletClass.newInstance();
                 httpServlet.doService(request, response);
 
+            } catch (ClassNotFoundException e){
+                if (logger.isErrorEnabled()){
+                    logger.error("类{}未定义", className);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 try {
                     socket.close();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("接口{}执行时间：{}", path, System.currentTimeMillis() - startTime);
+                    }
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }

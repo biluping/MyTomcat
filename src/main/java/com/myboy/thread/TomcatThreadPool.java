@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TomcatThreadPool {
 
-    private static Logger logger = LoggerFactory.getLogger(TomcatThreadPool.class);
+    private static final Logger logger = LoggerFactory.getLogger(TomcatThreadPool.class);
     private static ThreadPoolExecutor executor;
 
     public static void init(Properties properties) {
