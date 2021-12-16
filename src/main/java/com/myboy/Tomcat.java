@@ -13,7 +13,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Tomcat {
@@ -22,6 +25,7 @@ public class Tomcat {
 
     private static final Properties properties = new Properties();
     private static final ThreadPoolExecutor executor;
+    private final Map<String, HttpServlet> handlerMapping = new ConcurrentHashMap<>();
 
     static {
         // 初始化配置文件
@@ -74,23 +78,26 @@ public class Tomcat {
                 HttpServletRequest request = new HttpServletRequest(socket.getInputStream());
                 HttpServletResponse response = new HttpServletResponse(socket.getOutputStream());
 
-                className = properties.getProperty(request.getPath());
                 path = request.getPath();
-
-                // 未定义的Servlet
-                if (className == null) {
-                    ResponseUtils.write(response, ResponseCode.Not_Found, "接口不存在");
-                    socket.close();
-                    return;
-                }
 
                 if (logger.isDebugEnabled()){
                     logger.debug("{} {}", Thread.currentThread().getName(), request.getPath());
                 }
 
-                Class<?> servletClass = Class.forName(className);
-                HttpServlet httpServlet = (HttpServlet) servletClass.newInstance();
+                HttpServlet httpServlet = handlerMapping.get(path);
+                if (httpServlet == null){
+                    className = properties.getProperty(path);
+                    if (className == null){
+                        ResponseUtils.write(response, ResponseCode.Not_Found, ResponseCode.Not_Found.getMsg());
+                        return;
+                    }
+                    Class<?> servletClass = Class.forName(className);
+                    httpServlet = (HttpServlet) servletClass.newInstance();
+                    handlerMapping.put(path, httpServlet);
+                }
+
                 httpServlet.doService(request, response);
+
 
             } catch (ClassNotFoundException e){
                 if (logger.isErrorEnabled()){

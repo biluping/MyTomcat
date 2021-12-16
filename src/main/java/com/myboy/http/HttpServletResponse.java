@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 @Setter@ToString
 public class HttpServletResponse {
 
-    private ResponseCode code;
+    private ResponseCode code = ResponseCode.OK;
     private ContentType contentType = ContentType.TXT_HTML;
     private OutputStream outputStream;
 
